@@ -18,7 +18,9 @@ Un aperçu de l'application (placeholders).
 | Page d'accueil                                   | Page Produit                                    | Panier (Drawer)                               |
 | ------------------------------------------------ | ----------------------------------------------- | --------------------------------------------- |
 | ![Homepage](<img width="2539" height="1299" alt="image" src="https://github.com/user-attachments/assets/87a37445-5d16-469d-a1c6-83c30ab30426" />
-) | ![Product Page](./screenshots/product-page.png) | ![Cart Drawer](./screenshots/cart-drawer.png) |
+) | ![Product Page](<img width="2538" height="1298" alt="image" src="https://github.com/user-attachments/assets/fffdcda1-ae48-434c-ac99-dc2c37af3a58" />
+) | ![Cart Drawer](<img width="2543" height="1300" alt="image" src="https://github.com/user-attachments/assets/36737091-ade5-43e3-82ae-fca1c26e1303" />
+) |
 
 ## Fonctionnalités
 

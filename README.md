@@ -15,12 +15,9 @@ L'esthétique est volontairement épurée et monochrome, inspirée par la cultur
 
 Un aperçu de l'application (placeholders).
 
-| Page d'accueil                                   | Page Produit                                    | Panier (Drawer)                               |
-| ------------------------------------------------ | ----------------------------------------------- | --------------------------------------------- |
-| ![Homepage](<img width="2539" height="1299" alt="image" src="https://github.com/user-attachments/assets/87a37445-5d16-469d-a1c6-83c30ab30426" />
-) | ![Product Page](<img width="2538" height="1298" alt="image" src="https://github.com/user-attachments/assets/fffdcda1-ae48-434c-ac99-dc2c37af3a58" />
-) | ![Cart Drawer](<img width="2543" height="1300" alt="image" src="https://github.com/user-attachments/assets/36737091-ade5-43e3-82ae-fca1c26e1303" />
-) |
+| Page d'accueil | Page Produit | Panier (Drawer) |
+| :---: | :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/87a37445-5d16-469d-a1c6-83c30ab30426" width="400" alt="Homepage"> | <img src="https://github.com/user-attachments/assets/fffdcda1-ae48-434c-ac99-dc2c37af3a58" width="400" alt="Page Produit"> | <img src="https://github.com/user-attachments/assets/36737091-ade5-43e3-82ae-fca1c26e1303" width="400" alt="Panier"> |
 
 ## Fonctionnalités
 

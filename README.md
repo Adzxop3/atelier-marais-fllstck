@@ -15,9 +15,9 @@ L'esthétique est volontairement épurée et monochrome, inspirée par la cultur
 
 Un aperçu de l'application (placeholders).
 
-| Page d'accueil                                   | Page Produit                                    | Panier (Drawer)                               |
-| ------------------------------------------------ | ----------------------------------------------- | --------------------------------------------- |
-| ![Homepage](./screenshots/home.png) | ![Product Page](./screenshots/product-page.png) | ![Cart Drawer](./screenshots/cart-drawer.png) |
+| Page d'accueil | Page Produit | Panier (Drawer) |
+| :---: | :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/87a37445-5d16-469d-a1c6-83c30ab30426" width="400" alt="Homepage"> | <img src="https://github.com/user-attachments/assets/fffdcda1-ae48-434c-ac99-dc2c37af3a58" width="400" alt="Page Produit"> | <img src="https://github.com/user-attachments/assets/36737091-ade5-43e3-82ae-fca1c26e1303" width="400" alt="Panier"> |
 
 ## Fonctionnalités
 
@@ -74,13 +74,13 @@ npm install
 # 3. Créer un fichier .env à la racine de /server et le configurer
 # (voir la section "Variables d'environnement" ci-dessous)
 
-# 4. (Optionnel) Peupler la base de données avec des données de test
+# 4. (Optionnel) Alimenter la base de données avec des données de test
 node seed.js
 
 # 5. Lancer le serveur de développement (avec nodemon)
 npm run dev
 ```
-Le serveur devrait être accessible sur `http://localhost:VOTRE_PORT`.
+Le serveur devrait être accessible sur `http://localhost:votre_port`.
 
 ### 2. Configuration du Client (Frontend)
 
@@ -92,12 +92,12 @@ cd client
 npm install
 
 # 3. Créer un fichier .env à la racine de /client et y ajouter votre clé publique Stripe
-# VITE_STRIPE_PUBLIC_KEY=pk_test_votreclepublique
+# VITE_STRIPE_PUBLIC_KEY=pk_test_...
 
 # 4. Lancer le client
 npm run dev
 ```
-L'application React sera accessible sur `http://localhost:5173` (par défaut avec Vite).
+L'application React sera accessible sur `http://localhost:5173`.
 
 ## Variables d'environnement
 
@@ -110,14 +110,14 @@ PORT=8000
 MONGO_URI=mongodb+srv://...
 
 # Clé secrète pour signer les tokens JWT (doit être longue et complexe)
-JWT_SECRET=votre_super_secret_jwt
+JWT_SECRET=jwt_secret
 
 # Clé secrète Stripe (disponible dans votre dashboard développeur Stripe)
-STRIPE_SECRET_KEY=sk_test_votreclesecrète
+STRIPE_SECRET_KEY=sk_test_...
 ```
 
 ### Client (`/client/.env`)
 ```env
 # Clé publique Stripe (disponible dans votre dashboard développeur Stripe)
-VITE_STRIPE_PUBLIC_KEY=pk_test_votreclepublique
+VITE_STRIPE_PUBLIC_KEY=pk_test_...
 ```

@@ -11,10 +11,10 @@ require('dotenv').config();
 
 // --- CONFIGURATION ---
 const app = express();
-const JWT_SECRET = process.env.JWT_SECRET || "latelier_secret_key_123"; 
+const JWT_SECRET = process.env.JWT_SECRET; 
 
 // Stripe
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51RC0WdGfOpFpcPNV7kjlf8sGviEhiGBfrVXmBDDj78vium4vfANCQ9CLXkgI7ZSHdeqBtR3Jh7vaELlSnJzUjt4900ER5MFlUZ');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 // --- MIDDLEWARES GLOBAUX ---
 app.use(helmet()); // Sécurité des Headers HTTP
@@ -129,7 +129,7 @@ app.post('/api/login', loginLimiter, async (req, res) => {
 });
 
 
-// --- 2. PRODUITS ---
+// 2. PRODUITS 
 
 app.get('/api/products', async (req, res) => {
     try {
@@ -151,7 +151,7 @@ app.get('/api/products/:id', async (req, res) => {
     }
 });
 
-// --- ROUTES ADMIN ---
+// ROUTES ADMIN 
 app.post('/api/products', auth, admin, async (req, res) => {
   try {
     const newProduct = new Product(req.body);

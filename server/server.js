@@ -6,39 +6,33 @@ const jwt = require('jsonwebtoken');
 const Stripe = require('stripe');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const validator = require('validator'); // Pour la sécurité email (SonarQube)
+const validator = require('validator'); 
 require('dotenv').config();
 
-// --- CONFIGURATION ---
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET; 
 
-// Stripe
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// --- MIDDLEWARES GLOBAUX ---
-app.use(helmet()); // Sécurité des Headers HTTP
+// MIDDLEWARES GLOBAUX 
+app.use(helmet()); 
 app.use(cors({ origin: 'http://localhost:5173' })); 
 app.use(express.json());
 
-// --- SECURITÉ : NETTOYAGE NoSQL MAISON (Anti-Crash) ---
-// Remplace 'express-mongo-sanitize' pour éviter le bug "Cannot set property query"
 app.use((req, res, next) => {
   const sanitize = (obj) => {
     for (let key in obj) {
       if (key.startsWith('$') || key.includes('.')) {
-        delete obj[key]; // On supprime les clés dangereuses ($ne, $gt...)
+        delete obj[key]; 
       } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-        sanitize(obj[key]); // Nettoyage récursif
+        sanitize(obj[key]); 
       }
     }
   };
-  // On nettoie uniquement le corps de la requête (là où sont les dangers)
   if (req.body) sanitize(req.body);
   next();
 });
 
-// --- SECURITÉ : RATE LIMITER (Anti-Force Brute) ---
 const loginLimiter = rateLimit({
 	windowMs: 15 * 60 * 1000, // 15 minutes
 	max: 5, // 5 essais max
@@ -47,7 +41,7 @@ const loginLimiter = rateLimit({
 	legacyHeaders: false, 
 });
 
-// --- IMPORTS DES MODÈLES ---
+
 const User = require('./models/User');
 const Product = require('./models/Product');
 const Order = require('./models/Order');
@@ -55,28 +49,24 @@ const Subscriber = require('./models/Subscriber');
 const auth = require('./middleware/auth'); 
 const admin = require('./middleware/admin');
 
-// --- CONNEXION BDD ---
+// CONNEXION BDD 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connecté"))
   .catch(err => console.error("❌ Erreur MongoDB:", err));
 
 
-// ==========================================
-//                 ROUTES API
-// ==========================================
+// ROUTES API
 
-// --- 1. AUTHENTIFICATION ---
+// 1. AUTHENTIFICATION 
 
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Validation Email (Bibliothèque 'validator' pour éviter ReDoS SonarQube)
     if (!validator.isEmail(String(email))) {
       return res.status(400).json({ message: "Format d'email invalide." });
     }
 
-    // Validation Mot de passe fort
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
     if (!passwordRegex.test(password)) {
         return res.status(400).json({ 
@@ -103,7 +93,6 @@ app.post('/api/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Protection injection NoSQL : on force le type String
     const user = await User.findOne({ email: String(email) }); 
     
     if (!user) return res.status(400).json({ message: "Identifiants incorrects" });
@@ -172,14 +161,13 @@ app.delete('/api/products/:id', auth, admin, async (req, res) => {
 });
 
 
-// --- 3. WISHLIST ---
+// 3. WISHLIST 
 
 app.post('/api/wishlist/toggle', auth, async (req, res) => {
   try {
     const { productId } = req.body; 
     const userId = req.user.id; 
 
-    // Protection : parseInt
     const product = await Product.findOne({ id: parseInt(productId) });
     if (!product) return res.status(404).json({ message: "Produit introuvable" });
 
@@ -210,7 +198,7 @@ app.get('/api/wishlist', auth, async (req, res) => {
 });
 
 
-// --- 4. NEWSLETTER ---
+// 4. NEWSLETTER 
 
 app.post('/api/newsletter', async (req, res) => {
   try {
@@ -235,7 +223,7 @@ app.post('/api/newsletter', async (req, res) => {
 });
 
 
-// --- 5. PAIEMENT & COMMANDES ---
+// 5. PAIEMENT & COMMANDES 
 
 app.post('/api/create-payment-intent', async (req, res) => {
   try {
@@ -321,6 +309,6 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
-// --- LANCEMENT SERVEUR ---
+// LANCEMENT SERVEUR
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Serveur tournant sur le port ${PORT}`));

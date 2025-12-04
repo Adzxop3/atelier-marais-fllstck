@@ -13,7 +13,7 @@ L'esthétique est volontairement épurée et monochrome, inspirée par la cultur
 
 ## Captures d'écran
 
-Un aperçu de l'application (placeholders).
+Un aperçu de l'application :
 
 | Page d'accueil | Page Produit | Panier (Drawer) |
 | :---: | :---: | :---: |

@@ -5,57 +5,78 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Stripe = require('stripe');
 const helmet = require('helmet');
-const validator = require('validator');
-const rateLimit = require('express-rate-limit'); 
-const Subscriber = require('./models/Subscriber');
+const rateLimit = require('express-rate-limit');
+const validator = require('validator'); // Pour la sécurité email (SonarQube)
 require('dotenv').config();
 
+// --- CONFIGURATION ---
 const app = express();
-const JWT_SECRET = "latelier_secret_key_123"; 
+const JWT_SECRET = process.env.JWT_SECRET || "latelier_secret_key_123"; 
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+// Stripe
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51RC0WdGfOpFpcPNV7kjlf8sGviEhiGBfrVXmBDDj78vium4vfANCQ9CLXkgI7ZSHdeqBtR3Jh7vaELlSnJzUjt4900ER5MFlUZ');
 
-// Bloque l'IP après 5 tentatives ratées en 15 minutes
+// --- MIDDLEWARES GLOBAUX ---
+app.use(helmet()); // Sécurité des Headers HTTP
+app.use(cors({ origin: 'http://localhost:5173' })); 
+app.use(express.json());
+
+// --- SECURITÉ : NETTOYAGE NoSQL MAISON (Anti-Crash) ---
+// Remplace 'express-mongo-sanitize' pour éviter le bug "Cannot set property query"
+app.use((req, res, next) => {
+  const sanitize = (obj) => {
+    for (let key in obj) {
+      if (key.startsWith('$') || key.includes('.')) {
+        delete obj[key]; // On supprime les clés dangereuses ($ne, $gt...)
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        sanitize(obj[key]); // Nettoyage récursif
+      }
+    }
+  };
+  // On nettoie uniquement le corps de la requête (là où sont les dangers)
+  if (req.body) sanitize(req.body);
+  next();
+});
+
+// --- SECURITÉ : RATE LIMITER (Anti-Force Brute) ---
 const loginLimiter = rateLimit({
-	windowMs: 15 * 60 * 1000, 
-	max: 5, // Limite à 5 tentatives
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 5, // 5 essais max
 	message: { message: "Trop de tentatives. Compte bloqué temporairement pour 15 minutes." },
 	standardHeaders: true, 
 	legacyHeaders: false, 
 });
 
-// Middleware Global
-app.use(helmet()); 
-app.use(cors({ origin: 'http://localhost:5173' })); 
-app.use(express.json());
-
+// --- IMPORTS DES MODÈLES ---
 const User = require('./models/User');
 const Product = require('./models/Product');
 const Order = require('./models/Order');
+const Subscriber = require('./models/Subscriber');
 const auth = require('./middleware/auth'); 
 const admin = require('./middleware/admin');
 
+// --- CONNEXION BDD ---
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connecté"))
   .catch(err => console.error("❌ Erreur MongoDB:", err));
 
 
+// ==========================================
 //                 ROUTES API
+// ==========================================
 
-// --- 1. AUTHENTIFICATION SÉCURISÉE ---
+// --- 1. AUTHENTIFICATION ---
 
-// Inscription (Avec Validation Regex)
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // 1. Validation Email
-    if (!validator.isEmail(email)) {
+    // Validation Email (Bibliothèque 'validator' pour éviter ReDoS SonarQube)
+    if (!validator.isEmail(String(email))) {
       return res.status(400).json({ message: "Format d'email invalide." });
     }
 
-    // 2. Validation Mot de passe Robuste
-    // Min 8 chars, 1 Majuscule, 1 Minuscule, 1 Chiffre, 1 Caractère spécial
+    // Validation Mot de passe fort
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
     if (!passwordRegex.test(password)) {
         return res.status(400).json({ 
@@ -63,11 +84,11 @@ app.post('/api/register', async (req, res) => {
         });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: String(email) });
     if (existingUser) return res.status(400).json({ message: "Email déjà utilisé" });
 
-    // 3. Hashage renforcé (Salt 12)
-    const hashedPassword = await bcrypt.hash(password, 12); 
+    // Hashage renforcé (Salt 12)
+    const hashedPassword = await bcrypt.hash(password, 12);
     
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
@@ -78,12 +99,14 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Connexion (Protégée par Rate Limiter)
-app.post('/api/login', loginLimiter, async (req, res) => { 
+app.post('/api/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Identifiants incorrects" }); 
+    
+    // Protection injection NoSQL : on force le type String
+    const user = await User.findOne({ email: String(email) }); 
+    
+    if (!user) return res.status(400).json({ message: "Identifiants incorrects" });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Identifiants incorrects" });
@@ -119,6 +142,7 @@ app.get('/api/products', async (req, res) => {
 
 app.get('/api/products/:id', async (req, res) => {
     try {
+        // Protection : parseInt force le type Number
         const product = await Product.findOne({ id: parseInt(req.params.id) });
         if (product) res.json(product);
         else res.status(404).json({ message: "Produit introuvable" });
@@ -127,6 +151,7 @@ app.get('/api/products/:id', async (req, res) => {
     }
 });
 
+// --- ROUTES ADMIN ---
 app.post('/api/products', auth, admin, async (req, res) => {
   try {
     const newProduct = new Product(req.body);
@@ -154,7 +179,8 @@ app.post('/api/wishlist/toggle', auth, async (req, res) => {
     const { productId } = req.body; 
     const userId = req.user.id; 
 
-    const product = await Product.findOne({ id: productId });
+    // Protection : parseInt
+    const product = await Product.findOne({ id: parseInt(productId) });
     if (!product) return res.status(404).json({ message: "Produit introuvable" });
 
     const user = await User.findById(userId);
@@ -184,14 +210,42 @@ app.get('/api/wishlist', auth, async (req, res) => {
 });
 
 
-// --- 4. PAIEMENT STRIPE ---
+// --- 4. NEWSLETTER ---
+
+app.post('/api/newsletter', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!validator.isEmail(String(email))) {
+      return res.status(400).json({ message: "Email invalide" });
+    }
+
+    const existing = await Subscriber.findOne({ email: String(email) });
+    if (existing) {
+      return res.status(409).json({ message: "Déjà inscrit !" });
+    }
+
+    const newSub = new Subscriber({ email });
+    await newSub.save();
+
+    res.status(201).json({ message: "Inscription réussie" });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
+// --- 5. PAIEMENT & COMMANDES ---
 
 app.post('/api/create-payment-intent', async (req, res) => {
   try {
     const { items } = req.body; 
     let total = 0;
+    
+    if (!items || !Array.isArray(items)) return res.status(400).json({ error: "Panier invalide" });
+
     for (const item of items) {
-      const product = await Product.findOne({ id: item.id });
+      const product = await Product.findOne({ id: parseInt(item.id) });
       if (product) {
         total += product.price * item.quantity;
       }
@@ -210,9 +264,6 @@ app.post('/api/create-payment-intent', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-
-// --- 5. COMMANDES ---
 
 app.post('/api/orders', auth, async (req, res) => {
   try {
@@ -251,6 +302,7 @@ app.get('/api/my-orders', auth, async (req, res) => {
     }
 });
 
+// Admin : Toutes les commandes
 app.get('/api/orders', auth, admin, async (req, res) => {
   try {
     const orders = await Order.find().populate('userId', 'username email').sort({ createdAt: -1 });
@@ -267,29 +319,6 @@ app.get('/api/users', async (req, res) => {
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
-});
-
-// --- 6. NEWSLETTER ---
-app.post('/api/newsletter', async (req, res) => {
-  try {
-    const { email } = req.body;
-    
-    if (!email || !email.includes('@')) {
-      return res.status(400).json({ message: "Email invalide" });
-    }
-
-    const existing = await Subscriber.findOne({ email });
-    if (existing) {
-      return res.status(409).json({ message: "Déjà inscrit !" });
-    }
-
-    const newSub = new Subscriber({ email });
-    await newSub.save();
-
-    res.status(201).json({ message: "Inscription réussie" });
-  } catch (error) {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
 });
 
 // --- LANCEMENT SERVEUR ---

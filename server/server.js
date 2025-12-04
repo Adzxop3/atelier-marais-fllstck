@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Stripe = require('stripe');
 const helmet = require('helmet');
+const validator = require('validator');
 const rateLimit = require('express-rate-limit'); 
 const Subscriber = require('./models/Subscriber');
 require('dotenv').config();
@@ -49,8 +50,7 @@ app.post('/api/register', async (req, res) => {
     const { username, email, password } = req.body;
 
     // 1. Validation Email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!validator.isEmail(email)) {
       return res.status(400).json({ message: "Format d'email invalide." });
     }
 
